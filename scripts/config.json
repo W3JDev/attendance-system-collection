@@ -1,0 +1,35 @@
+{
+    "localProjectPaths": [
+        "C:/Users/mnjew/Desktop/Attendance",
+        "C:/Users/mnjew/Desktop/Projects/Attendance",
+        "C:/Users/mnjew/Documents/GitHub/Attendance"
+    ],
+    "targetDirectory": "C:/Users/mnjew/Projects/attendance-master",
+    "remoteRepos": [
+        {
+            "name": "Automated-Time-Attendance-",
+            "url": "https://github.com/W3JDev/Automated-Time-Attendance-.git",
+            "folder": "01-automated-time-attendance"
+        },
+        {
+            "name": "smart-attendance-app",
+            "url": "https://github.com/W3JDev/smart-attendance-app.git",
+            "folder": "02-smart-attendance-app"
+        },
+        {
+            "name": "Smart-Attendance-V3",
+            "url": "https://github.com/W3JDev/Smart-Attendance-V3.git",
+            "folder": "03-smart-attendance-v3"
+        },
+        {
+            "name": "Smart-Attendance-System.V3.1",
+            "url": "https://github.com/W3JDev/Smart-Attendance-System.V3.1.git",
+            "folder": "04-smart-attendance-system-v3.1"
+        },
+        {
+            "name": "smart-attendance-system",
+            "url": "https://github.com/W3JDev/smart-attendance-system.git",
+            "folder": "05-smart-attendance-system"
+        }
+    ]
+}
