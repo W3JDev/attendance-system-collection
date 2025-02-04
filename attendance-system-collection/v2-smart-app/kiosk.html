@@ -1,0 +1,155 @@
+<!-- kiosk.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Kiosk</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="main.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Kiosk - Punch In/Out</h1>
+    
+    <div style="text-align:center;">
+      <input type="password" id="kioskPasscode" class="input-field" placeholder="Passcode" style="max-width:200px; font-size:24px; text-align:center;">
+      
+      <!-- Numeric Pad -->
+      <div class="numpad-container">
+        <button class="numpad-btn" onclick="numpadInput('1')">1</button>
+        <button class="numpad-btn" onclick="numpadInput('2')">2</button>
+        <button class="numpad-btn" onclick="numpadInput('3')">3</button>
+        <button class="numpad-btn" onclick="numpadInput('4')">4</button>
+        <button class="numpad-btn" onclick="numpadInput('5')">5</button>
+        <button class="numpad-btn" onclick="numpadInput('6')">6</button>
+        <button class="numpad-btn" onclick="numpadInput('7')">7</button>
+        <button class="numpad-btn" onclick="numpadInput('8')">8</button>
+        <button class="numpad-btn" onclick="numpadInput('9')">9</button>
+        <button class="numpad-btn" onclick="numpadInput('0')">0</button>
+        <button class="numpad-btn" onclick="clearNumpad()">C</button>
+        <button class="numpad-btn" onclick="delNumpad()">←</button>
+      </div>
+      
+      <button class="btn" style="font-size:18px; margin-top:15px;" onclick="doClockIn()">Clock In</button>
+      <button class="btn" style="font-size:18px; margin-left:20px;" onclick="doClockOut()">Clock Out</button>
+      
+      <div style="margin-top:20px;">
+        <label>
+          <input type="checkbox" id="enableCamera" onchange="toggleCamera()"> 
+          Enable Camera Capture
+        </label>
+      </div>
+      
+      <div id="cameraPreview">
+        <video id="cameraStream" autoplay playsinline></video>
+        <!-- We'll capture a hidden canvas in JS -->
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    let videoStream = null;
+    
+    function numpadInput(val) {
+      let passField = document.getElementById("kioskPasscode");
+      passField.value += val;
+    }
+    function clearNumpad() {
+      document.getElementById("kioskPasscode").value = "";
+    }
+    function delNumpad() {
+      let passField = document.getElementById("kioskPasscode");
+      passField.value = passField.value.slice(0, -1);
+    }
+    
+    async function toggleCamera() {
+      let checkbox = document.getElementById("enableCamera");
+      let preview = document.getElementById("cameraPreview");
+      if(checkbox.checked) {
+        preview.style.display = "block";
+        if(!videoStream) {
+          try {
+            videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            document.getElementById("cameraStream").srcObject = videoStream;
+          } catch(err) {
+            alert("Camera not accessible: " + err);
+            checkbox.checked = false;
+            preview.style.display = "none";
+          }
+        }
+      } else {
+        preview.style.display = "none";
+        if(videoStream) {
+          let tracks = videoStream.getTracks();
+          tracks.forEach(t => t.stop());
+        }
+        videoStream = null;
+      }
+    }
+    
+    function doClockIn() {
+      let passcode = document.getElementById("kioskPasscode").value.trim();
+      if(!passcode) {
+        alert("Please enter passcode.");
+        return;
+      }
+      if(videoStream) {
+        captureFaceAndClock(passcode, "in");
+      } else {
+        let res = clockIn(passcode, null);
+        handleClockResult(res);
+      }
+    }
+    
+    function doClockOut() {
+      let passcode = document.getElementById("kioskPasscode").value.trim();
+      if(!passcode) {
+        alert("Please enter passcode.");
+        return;
+      }
+      let res = clockOut(passcode);
+      if(res.error) {
+        alert(res.error);
+      } else {
+        alert(res.success);
+      }
+      clearNumpad();
+    }
+    
+    function handleClockResult(res) {
+      if(res.error) {
+        alert(res.error);
+      } else {
+        alert(res.success + (res.late ? " (Late!)" : ""));
+      }
+      clearNumpad();
+    }
+    
+    function captureFaceAndClock(passcode, direction) {
+      // direction: "in" or "out"
+      // We'll capture an image from the video feed
+      let videoEl = document.getElementById("cameraStream");
+      let canvas = document.createElement("canvas");
+      canvas.width = videoEl.videoWidth;
+      canvas.height = videoEl.videoHeight;
+      
+      let ctx = canvas.getContext("2d");
+      ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+      
+      let imgData = canvas.toDataURL("image/png"); // base64
+      if(direction === "in") {
+        let res = clockIn(passcode, imgData);
+        handleClockResult(res);
+      } else {
+        let res = clockOut(passcode);
+        if(res.error) {
+          alert(res.error);
+        } else {
+          alert(res.success);
+        }
+        clearNumpad();
+      }
+    }
+  </script>
+</body>
+</html>

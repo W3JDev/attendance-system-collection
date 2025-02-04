@@ -1,0 +1,125 @@
+<!-- staff.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Staff Panel</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="main.js"></script>
+</head>
+<body>
+  <div class="container" id="loginContainer">
+    <h1>Staff Login</h1>
+    <label>Passcode</label>
+    <input type="password" id="staffLoginPass" class="input-field" placeholder="Enter passcode">
+    <button class="btn" onclick="staffLogin()">Login</button>
+  </div>
+  
+  <div class="container hidden" id="staffHome">
+    <h1>Staff Portal</h1>
+    <p id="staffWelcomeMsg"></p>
+    <button class="btn" onclick="logoutStaff()">Logout</button>
+    
+    <hr>
+    <h2>Your Shift Schedule</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Shift Date</th>
+          <th>Start</th>
+          <th>End</th>
+        </tr>
+      </thead>
+      <tbody id="staffShiftTable"></tbody>
+    </table>
+    
+    <hr>
+    <h2>Your Attendance</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Clock In</th>
+          <th>Clock Out</th>
+          <th>Hours</th>
+        </tr>
+      </thead>
+      <tbody id="staffAttendanceTable"></tbody>
+    </table>
+    <button class="btn" onclick="refreshMyAttendance()">Refresh Attendance</button>
+    
+    <hr>
+    <h2>Missed Punch Request</h2>
+    <p>Request a correction if you forgot to clock in/out. (Demo only: we store in console/log.)</p>
+    <button class="btn" onclick="requestMissedPunch()">Request Missed Punch</button>
+  </div>
+  
+  <script>
+    let currentStaffPasscode = null;
+    
+    function staffLogin() {
+      let pass = document.getElementById("staffLoginPass").value.trim();
+      let staff = findStaffByPasscode(pass);
+      if(!staff) {
+        alert("Invalid passcode.");
+        return;
+      }
+      // Logged in
+      currentStaffPasscode = pass;
+      document.getElementById("loginContainer").classList.add("hidden");
+      document.getElementById("staffHome").classList.remove("hidden");
+      document.getElementById("staffWelcomeMsg").innerText = `Welcome, ${staff.name || 'Staff'}!`;
+      refreshShiftSchedule();
+      refreshMyAttendance();
+    }
+    
+    function logoutStaff() {
+      currentStaffPasscode = null;
+      document.getElementById("staffLoginPass").value = "";
+      document.getElementById("loginContainer").classList.remove("hidden");
+      document.getElementById("staffHome").classList.add("hidden");
+    }
+    
+    function refreshShiftSchedule() {
+      if(!currentStaffPasscode) return;
+      let shiftList = getShiftsList();
+      let staffShift = shiftList.filter(s => s.passcode === currentStaffPasscode || !s.passcode);
+      
+      let tbody = document.getElementById("staffShiftTable");
+      tbody.innerHTML = "";
+      staffShift.forEach(sh => {
+        let tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${sh.date}</td>
+          <td>${sh.startTime}</td>
+          <td>${sh.endTime}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    
+    function refreshMyAttendance() {
+      if(!currentStaffPasscode) return;
+      let records = getStaffAttendance(currentStaffPasscode);
+      let tbody = document.getElementById("staffAttendanceTable");
+      tbody.innerHTML = "";
+      records.forEach(r => {
+        let clockIn = r.clockIn ? new Date(r.clockIn).toLocaleString() : "";
+        let clockOut = r.clockOut ? new Date(r.clockOut).toLocaleString() : "";
+        let tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${clockIn}</td>
+          <td>${clockOut}</td>
+          <td>${r.hours}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    
+    function requestMissedPunch() {
+      // For demo, just console.log it. In real app, store in localStorage for admin approval.
+      console.log("Missed punch request from passcode:", currentStaffPasscode);
+      alert("Missed punch request sent (demo). Check console.");
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,311 @@
+<!-- admin.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Chart.js CDN (optional) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="main.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Admin Panel</h1>
+    <p style="text-align:right;">
+      <button class="btn" onclick="exportAllData()">Download All Data</button>
+    </p>
+    
+    <div class="tab-container">
+      <div class="tab-buttons">
+        <button class="btn" onclick="showTab('staffMgmtTab')">Staff Management</button>
+        <button class="btn" onclick="showTab('shiftTab')">Shift Creation</button>
+        <button class="btn" onclick="showTab('attendanceTab')">Attendance & Analysis</button>
+        <button class="btn" onclick="showTab('payslipTab')">Payslips</button>
+      </div>
+      
+      <!-- Staff Management Tab -->
+      <div id="staffMgmtTab" class="tab-content">
+        <h2>Staff Management</h2>
+        <div>
+          <label for="adm_passcode">Passcode</label>
+          <input id="adm_passcode" class="input-field" placeholder="Unique 4 digits or so">
+          
+          <label for="adm_name">Name</label>
+          <input id="adm_name" class="input-field" placeholder="Staff name (if any)">
+          
+          <label for="adm_role">Role</label>
+          <select id="adm_role" class="select-field">
+            <option value="staff">Staff</option>
+            <option value="admin">Admin</option>
+          </select>
+          
+          <label for="adm_wageType">Wage Type</label>
+          <select id="adm_wageType" class="select-field">
+            <option value="hourly">Hourly</option>
+            <option value="fixed">Fixed</option>
+          </select>
+          
+          <label for="adm_wageRate">Wage Rate</label>
+          <input id="adm_wageRate" type="number" class="input-field" placeholder="e.g. 15">
+          
+          <button class="btn" onclick="adminSaveStaff()">Save Staff</button>
+        </div>
+        
+        <h3>Current Staff List</h3>
+        <table id="adm_staffTable">
+          <thead>
+            <tr>
+              <th>Passcode</th>
+              <th>Name</th>
+              <th>Role</th>
+              <th>WageType</th>
+              <th>WageRate</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      
+      <!-- Shift Tab -->
+      <div id="shiftTab" class="tab-content">
+        <h2>Create Shifts</h2>
+        <p>Assign shifts to a single staff or create multiple entries.</p>
+        <label for="shift_passcode">Staff Passcode</label>
+        <input id="shift_passcode" class="input-field" placeholder="Passcode or leave blank for all?">
+        
+        <label for="shift_date">Date</label>
+        <input id="shift_date" type="date" class="input-field">
+        
+        <label for="shift_start">Start Time</label>
+        <input id="shift_start" type="time" class="input-field">
+        
+        <label for="shift_end">End Time</label>
+        <input id="shift_end" type="time" class="input-field">
+        
+        <button class="btn" onclick="adminCreateShift()">Create Shift</button>
+        
+        <h3>All Shifts</h3>
+        <table id="adm_shiftTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Passcode</th>
+              <th>Date</th>
+              <th>Start</th>
+              <th>End</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      
+      <!-- Attendance & Analysis Tab -->
+      <div id="attendanceTab" class="tab-content">
+        <h2>Attendance & Analysis</h2>
+        <button class="btn" onclick="refreshAttendanceTable()">Refresh Data</button>
+        <table id="adm_attendanceTable">
+          <thead>
+            <tr>
+              <th>Passcode</th>
+              <th>Clock In</th>
+              <th>Clock Out</th>
+              <th>Hours</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        
+        <h3>Staff Hours Chart</h3>
+        <canvas id="hoursChart" width="400" height="200"></canvas>
+      </div>
+      
+      <!-- Payslip Tab -->
+      <div id="payslipTab" class="tab-content">
+        <h2>Generate Payslips</h2>
+        <button class="btn" onclick="generatePayslipTable()">Generate</button>
+        <table id="adm_payslipTable">
+          <thead>
+            <tr>
+              <th>Passcode</th>
+              <th>Name</th>
+              <th>Total Hours</th>
+              <th>WageType</th>
+              <th>WageRate</th>
+              <th>TotalPay</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Tab logic
+    function showTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+    }
+    // Default to staffMgmtTab
+    showTab('staffMgmtTab');
+    
+    // On load, refresh staff table
+    window.onload = function() {
+      refreshStaffTable();
+      refreshShiftTable();
+    };
+    
+    function adminSaveStaff() {
+      let passcode = document.getElementById("adm_passcode").value.trim();
+      let name = document.getElementById("adm_name").value.trim();
+      let role = document.getElementById("adm_role").value;
+      let wageType = document.getElementById("adm_wageType").value;
+      let wageRate = parseFloat(document.getElementById("adm_wageRate").value) || 0;
+      
+      if(!passcode) {
+        alert("Passcode is required.");
+        return;
+      }
+      let staffObj = { passcode, name, role, wageType, wageRate };
+      let res = addOrUpdateStaff(staffObj);
+      if(res.success) {
+        alert(res.success);
+      } else if(res.error) {
+        alert(res.error);
+      }
+      refreshStaffTable();
+    }
+    
+    function refreshStaffTable() {
+      let staffList = getStaffList();
+      let tbody = document.querySelector("#adm_staffTable tbody");
+      tbody.innerHTML = "";
+      staffList.forEach(s => {
+        let tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${s.passcode}</td>
+          <td>${s.name || ""}</td>
+          <td>${s.role}</td>
+          <td>${s.wageType}</td>
+          <td>${s.wageRate}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    
+    function adminCreateShift() {
+      let passcode = document.getElementById("shift_passcode").value.trim();
+      let date = document.getElementById("shift_date").value;
+      let startTime = document.getElementById("shift_start").value;
+      let endTime = document.getElementById("shift_end").value;
+      
+      if(!date || !startTime || !endTime) {
+        alert("Please fill date, start time, and end time.");
+        return;
+      }
+      
+      let shiftId = "shift_" + Date.now();
+      let shiftObj = { shiftId, passcode, date, startTime, endTime };
+      let res = createShift(shiftObj);
+      if(res.success) alert(res.success);
+      refreshShiftTable();
+    }
+    
+    function refreshShiftTable() {
+      let shiftList = getShiftsList();
+      let tbody = document.getElementById("adm_shiftTable").querySelector("tbody");
+      tbody.innerHTML = "";
+      shiftList.forEach(s => {
+        let tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${s.shiftId}</td>
+          <td>${s.passcode || "ALL"}</td>
+          <td>${s.date}</td>
+          <td>${s.startTime}</td>
+          <td>${s.endTime}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    
+    function refreshAttendanceTable() {
+      let att = getAllAttendance();
+      let tbody = document.querySelector("#adm_attendanceTable tbody");
+      tbody.innerHTML = "";
+      // For chart data
+      let staffMap = {};
+      
+      att.forEach(r => {
+        let clockIn = r.clockIn ? new Date(r.clockIn).toLocaleString() : "";
+        let clockOut = r.clockOut ? new Date(r.clockOut).toLocaleString() : "";
+        let tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${r.passcode}</td>
+          <td>${clockIn}</td>
+          <td>${clockOut}</td>
+          <td>${r.hours}</td>
+        `;
+        tbody.appendChild(tr);
+        
+        // Sum hours for chart
+        if(!staffMap[r.passcode]) {
+          staffMap[r.passcode] = 0;
+        }
+        staffMap[r.passcode] += r.hours;
+      });
+      
+      // Build chart
+      buildHoursChart(staffMap);
+    }
+    
+    function buildHoursChart(staffMap) {
+      let ctx = document.getElementById("hoursChart").getContext("2d");
+      if(window.myHoursChart) {
+        window.myHoursChart.destroy();
+      }
+      let labels = Object.keys(staffMap);
+      let data = Object.values(staffMap).map(h => parseFloat(h.toFixed(2)));
+      
+      window.myHoursChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Total Hours',
+            data,
+            backgroundColor: '#1565C0'
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+    
+    function generatePayslipTable() {
+      let results = calculateAllPayslips();
+      let tbody = document.querySelector("#adm_payslipTable tbody");
+      tbody.innerHTML = "";
+      results.forEach(r => {
+        if(!r) return;
+        let tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${r.passcode}</td>
+          <td>${r.name}</td>
+          <td>${r.totalHours}</td>
+          <td>${r.wageType}</td>
+          <td>${r.wageRate}</td>
+          <td>${r.totalPay}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+  </script>
+</body>
+</html>
