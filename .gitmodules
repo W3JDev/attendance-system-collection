@@ -1,0 +1,19 @@
+[submodule "01-automated-time-attendance"]
+    path = 01-automated-time-attendance
+    url = https://github.com/W3JDev/Automated-Time-Attendance-.git
+
+[submodule "02-smart-attendance-app"]
+    path = 02-smart-attendance-app
+    url = https://github.com/W3JDev/smart-attendance-app.git
+
+[submodule "03-smart-attendance-v3"]
+    path = 03-smart-attendance-v3
+    url = https://github.com/W3JDev/Smart-Attendance-V3.git
+
+[submodule "04-smart-attendance-system-v3.1"]
+    path = 04-smart-attendance-system-v3.1
+    url = https://github.com/W3JDev/Smart-Attendance-System.V3.1.git
+
+[submodule "05-smart-attendance-system"]
+    path = 05-smart-attendance-system
+    url = https://github.com/W3JDev/smart-attendance-system.git
